@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -10,4 +9,3 @@ Currently, two official plugins are available:
 =======
 # MERN-Calendar
 MERN-Calendar
->>>>>>> de58d0885a7b59eb11d445a0359fd1cdee9e28a2
