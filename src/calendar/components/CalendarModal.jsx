@@ -1,9 +1,12 @@
 import { addHours, differenceInSeconds } from "date-fns";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Modal from "react-modal";
 import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { es } from "date-fns/locale/es";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
+import { useCalendarStore, useUiStore } from "../../hooks/";
 
 registerLocale("es", es);
 const customStyles = {
@@ -20,14 +23,28 @@ const customStyles = {
 Modal.setAppElement("#root");
 
 export const CalendarModal = () => {
-    const [isModalOpen, setIsModalOpen] = useState(true);
 
+    const {isDateModalOpen, closeDateModal} = useUiStore();
+    const [formSubmitted, setFormSubmitted] = useState(false);
+    const {activeEvent,startSavingEvent} = useCalendarStore();
     const [formValues, setFormValues] = useState({
-        title: "Jonatan",
-        notes: "Vargas",
+        title: "",
+        notes: "",
         start: new Date(),
         end: addHours(new Date(), 2),
     });
+
+    const titleClass = useMemo(() => {
+        if (!formSubmitted) return "";
+
+        return formValues.title.length > 0 ? "is-valid" : "is-invalid";
+    }, [formValues.title, formSubmitted]);
+    
+    useEffect(() => {
+        if(activeEvent !== null){
+            setFormValues({... activeEvent});
+        }
+    }, [activeEvent]);
 
     const onInputChanged = ({ target }) => {
         setFormValues({
@@ -44,33 +61,43 @@ export const CalendarModal = () => {
     };
 
     const onCLoseModal = () => {
-        console.log("cerrar modal");
-        setIsModalOpen(false);
+        closeDateModal();
     };
 
-    const onSubmit = (e) => {
+    const onSubmit = async(e) => {
         e.preventDefault();
-        const difference = differenceInSeconds(formValues.end, formValues.start);
+        setFormSubmitted(true);
+
+        const difference = differenceInSeconds(
+            formValues.end,
+            formValues.start
+        );
+
         if (difference <= 0 || isNaN(difference)) {
-            console.log('Error en fechas');
+            Swal.fire(
+                "Fechas Incorrectas",
+                "Revisar las fechas ingresadas",
+                "error"
+            );
             return;
         }
 
-        if(formValues.title.length <= 0) {
-            console.log('Error, escriba un titulo');
+        if (formValues.title.length <= 0) {
+            console.log("Error, escriba un titulo");
             return;
-        };
-        
-        console.log({formValues});
+        }
+
+        console.log({ formValues });
 
         //TODO:
-        //cerrar modal
-        //Remover errores en pantalla
+        await startSavingEvent(formValues);
+        closeDateModal();
+        setFormSubmitted(false);
     };
 
     return (
         <Modal
-            isOpen={isModalOpen}
+            isOpen={isDateModalOpen}
             onRequestClose={onCLoseModal}
             style={customStyles}
             className='modal'
@@ -89,7 +116,7 @@ export const CalendarModal = () => {
                         showTimeSelect
                         dateFormat={"Pp"}
                         locale={es}
-                        timeCaption="Hora"
+                        timeCaption='Hora'
                     />
                 </div>
 
@@ -103,7 +130,7 @@ export const CalendarModal = () => {
                         showTimeSelect
                         dateFormat={"Pp"}
                         locale={es}
-                        timeCaption="Hora"
+                        timeCaption='Hora'
                     />
                 </div>
 
@@ -112,7 +139,7 @@ export const CalendarModal = () => {
                     <label>Titulo y notas</label>
                     <input
                         type='text'
-                        className='form-control'
+                        className={`form-control ${titleClass}`}
                         placeholder='Título del evento'
                         name='title'
                         autoComplete='off'
